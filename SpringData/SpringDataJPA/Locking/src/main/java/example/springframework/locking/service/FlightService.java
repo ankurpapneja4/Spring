@@ -32,6 +32,19 @@ public class FlightService {
         flightRepository.save( flight );
     }
 
+    @Transactional
+    public  void allocateSeatsWithLock(long flightId, int numOfSeats){
+
+        // SELECT ... FOR UPDATE
+        Flight flight = flightRepository.findByIdWithLock( flightId).orElseThrow( () -> new RuntimeException("Flight not found"));
+
+        if( flight.getAvailableSeats() < numOfSeats) throw new IllegalStateException("Number of seats requested, should be less than total available seats");
+
+        flight.setAvailableSeats( flight.getAvailableSeats() - numOfSeats );
+
+        flightRepository.save( flight );
+    }
+
     public void deleteFlight( long flightId ){
         flightRepository.deleteById(flightId);
     }

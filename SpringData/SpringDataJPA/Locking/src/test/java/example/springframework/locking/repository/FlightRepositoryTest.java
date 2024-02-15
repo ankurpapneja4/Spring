@@ -91,6 +91,45 @@ class FlightRepositoryTest {
 
     }
 
+    @Test
+    void givenLocking_whenConcurrentTransactionUpdatingSameRecord_shouldNotCauseInconsistency() throws InterruptedException {
+
+
+        int currentAvailableSeats = flightService.findById( FLIGHT_ID ).getAvailableSeats();
+
+        // Given: 50 Seats Are Available
+        assertEquals( FLIGHT_CAPACITY , currentAvailableSeats );
+
+
+        int numberOfThreads = 50;
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        CountDownLatch countDownLatch = new CountDownLatch( numberOfThreads );
+
+        for(int i = 0; i < numberOfThreads; i++)
+            executorService.execute( () -> {
+                try {
+                    // When : For 50 Concurrent Requests, Allocate 1 Seat Per Request
+                    // With Lock
+                    flightService.allocateSeatsWithLock( FLIGHT_ID , 1);
+                }
+                catch ( RuntimeException exp) { System.out.println( exp.getMessage() ); }
+                finally { countDownLatch.countDown(); }
+            });
+
+        countDownLatch.await(10, TimeUnit.SECONDS);
+
+
+        // Then: Number Of Available Seats, After Allocation, Should Be Zero
+        Thread thread =new Thread( () -> {
+            int availableSeatsAfterAllocation = flightService.findById( FLIGHT_ID ).getAvailableSeats();
+            assertEquals( 0, availableSeatsAfterAllocation, "No Seat Should Be Available, After Allocating 50 Seats" );
+            System.out.println(availableSeatsAfterAllocation);
+
+        });
+        thread.start(); thread.join();
+
+    }
+
 
 
 }
