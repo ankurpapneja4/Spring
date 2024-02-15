@@ -4,8 +4,6 @@ spring:
     username: h2
     password: h2
     driverClassName: org.h2.Driver
-  jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
-    hibernate.ddl-auto: update
+
 
 
